@@ -1,1 +1,1 @@
-Drop your FBX here (`YourCharacter/`, `YourEnv/`). See Docs/lessons/08_swap_your_fbx.md.
+把你的 FBX 放到这里即可。角色 / 环境材质和槽位脚本还没接，先用 Hub 里的占位体看档位。

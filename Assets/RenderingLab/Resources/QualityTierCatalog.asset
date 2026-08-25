@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69a94532fbd45477526f883d68873581, type: 3}
+  m_Name: QualityTierCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::RenderingLab.QualityTierCatalog
+  pipelineAssets:
+  - {fileID: 11400000, guid: 10f98223628883d4e972d5ed6b66d6a9, type: 2}
+  - {fileID: 11400000, guid: 4d504abb01476564ba7501c0b3c21257, type: 2}
+  - {fileID: 11400000, guid: fbeba51299460c2449378dc4b350d98f, type: 2}
+  - {fileID: 11400000, guid: 1952572cd85e51448aeed53592247079, type: 2}
+  - {fileID: 11400000, guid: f2350f08e3763614f8818e26be680c3b, type: 2}
+  - {fileID: 11400000, guid: 779bca0a71a69aa48b74c9269599b5cb, type: 2}
+  rendererData:
+  - {fileID: 11400000, guid: 49befd8666d66544b9bca63ce4b13128, type: 2}
+  - {fileID: 11400000, guid: 569454aad5190c543822bd19cdc5a914, type: 2}
+  - {fileID: 11400000, guid: 2d150556dc8afdd49b7470557d1615b7, type: 2}
+  - {fileID: 11400000, guid: 375e7df87ed379e4ab45471f63c1e7de, type: 2}
+  - {fileID: 11400000, guid: 230cb0ab1fc603b4a9c6085fe055e5ea, type: 2}
+  - {fileID: 11400000, guid: a48c7da317eaad6418e693eaec33b897, type: 2}
+  renderingPath:
+  - Forward+
+  - Forward+
+  - Forward
+  - Forward+
+  - Forward
+  - Forward
+  shadowMapSize: 001000000008000000040000000800000004000000020000
+  renderScale:
+  - 1
+  - 1
+  - 0.85
+  - 0.9
+  - 0.75
+  - 0.6
+  additionalLights: 010100010000
+  hdr: 010100010100
+  stp: 010000000000

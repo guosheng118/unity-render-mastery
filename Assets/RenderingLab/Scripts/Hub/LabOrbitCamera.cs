@@ -1,15 +1,11 @@
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace RenderingLab
 {
-    /// <summary>
-    /// Orbit camera for the lab. RMB drag / WASD optional. Keeps the character in frame.
-    /// </summary>
     public class LabOrbitCamera : MonoBehaviour
     {
         public Transform target;
-        public Vector3 offset = new Vector3(0, 1.4f, 0);
+        public Vector3 offset = new Vector3(0, 1.1f, 0);
         public float distance = 4.4f;
         public float yaw = -8f;
         public float pitch = 8f;
@@ -22,8 +18,12 @@ namespace RenderingLab
         {
             if (target == null)
             {
-                var slot = FindFirstObjectByType<CharacterSlot>();
-                if (slot != null) target = slot.transform;
+                var stage = GameObject.Find("Stage");
+                if (stage != null)
+                {
+                    var capsule = stage.transform.Find("Capsule");
+                    target = capsule != null ? capsule : stage.transform;
+                }
             }
 
             if (Input.GetMouseButtonDown(1))

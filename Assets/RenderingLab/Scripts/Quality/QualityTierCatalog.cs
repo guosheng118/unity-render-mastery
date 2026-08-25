@@ -9,14 +9,6 @@ namespace RenderingLab
         public UniversalRenderPipelineAsset[] pipelineAssets = new UniversalRenderPipelineAsset[6];
         public UniversalRendererData[] rendererData = new UniversalRendererData[6];
 
-        [Header("Feature flags (mirrors what the URP assets should enable)")]
-        public bool[] planarReflection = { true, true, false, false, false, false };
-        public bool[] outline = { true, true, true, true, true, false };
-        public bool[] ssao = { true, true, false, true, false, false };
-        public bool[] bloom = { true, true, true, true, true, false };
-        public bool[] stp = { true, false, false, false, false, false };
-        public bool[] additionalLights = { true, true, false, true, false, false };
-
         public string[] renderingPath =
         {
             "Forward+",
@@ -29,6 +21,9 @@ namespace RenderingLab
 
         public int[] shadowMapSize = { 4096, 2048, 1024, 2048, 1024, 512 };
         public float[] renderScale = { 1f, 1f, 0.85f, 0.9f, 0.75f, 0.6f };
+        public bool[] additionalLights = { true, true, false, true, false, false };
+        public bool[] hdr = { true, true, false, true, true, false };
+        public bool[] stp = { true, false, false, false, false, false };
 
         public UniversalRenderPipelineAsset GetPipeline(QualityTier tier)
         {

@@ -1,16 +1,14 @@
 #if UNITY_EDITOR
 using System.IO;
 using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.SceneManagement;
 
 namespace RenderingLab.Editor
 {
     /// <summary>
-    /// First-open wizard. Creates 6 URP assets, wires Quality Settings, features, and a Resources catalog.
+    /// Creates 6 URP Pipeline / Renderer assets and wires Quality Settings.
     /// Menu: Rendering Lab > Initialize Project
     /// </summary>
     public static class RenderingLabProjectSetup
@@ -24,7 +22,7 @@ namespace RenderingLab.Editor
         {
             EditorApplication.delayCall += () =>
             {
-                if (GraphicsSettings.defaultRenderPipeline == null)
+                if (GraphicsSettings.defaultRenderPipeline == null || HasMissingRendererFeatures())
                     Run(false);
             };
         }
@@ -69,7 +67,7 @@ namespace RenderingLab.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             if (log)
-                Debug.Log("Rendering Lab initialized. Open 00_Hub and press Play.");
+                Debug.Log("Rendering Lab: 6 quality pipelines ready. Open 00_Hub and press Play.");
         }
 
         static UniversalRendererData GetOrCreateRenderer(string path, QualityTier tier)
@@ -87,81 +85,50 @@ namespace RenderingLab.Editor
             data.depthPrimingMode = DepthPrimingMode.Disabled;
             data.accurateGbufferNormals = false;
             data.shadowTransparentReceive = !QualityTierUtil.IsLow(tier);
-
-            AddFeature<OutlineRendererFeature>(data);
-            AddFeature<PlanarReflectionRendererFeature>(data);
-            AddFeature<DebugBufferRendererFeature>(data);
-            var ssr = AddFeature<SimpleSsrRendererFeature>(data);
-            if (ssr != null)
-                ssr.settings.enabled = false;
-
-            TryAddSsao(data, catalogSsao: !QualityTierUtil.IsLow(tier) && tier != QualityTier.MobileMid);
-
+            ClearRendererFeatures(data);
             EditorUtility.SetDirty(data);
             return data;
         }
 
-        static T AddFeature<T>(UniversalRendererData data) where T : ScriptableRendererFeature
+        static bool HasMissingRendererFeatures()
         {
-            var so = new SerializedObject(data);
-            var features = so.FindProperty("m_RendererFeatures");
-            if (features != null)
-            {
-                for (int i = 0; i < features.arraySize; i++)
-                {
-                    var obj = features.GetArrayElementAtIndex(i).objectReferenceValue as T;
-                    if (obj != null) return obj;
-                }
-            }
+            var catalog = AssetDatabase.LoadAssetAtPath<QualityTierCatalog>(CatalogPath);
+            if (catalog == null || catalog.rendererData == null)
+                return false;
 
-            var feature = ScriptableObject.CreateInstance<T>();
-            feature.name = typeof(T).Name;
-            feature.SetActive(true);
-            AssetDatabase.AddObjectToAsset(feature, data);
-            InsertRendererFeature(data, feature);
-            EditorUtility.SetDirty(data);
-            return feature;
-        }
-
-        static void TryAddSsao(UniversalRendererData data, bool catalogSsao)
-        {
-            var so = new SerializedObject(data);
-            var features = so.FindProperty("m_RendererFeatures");
-            if (features != null)
+            foreach (var data in catalog.rendererData)
             {
+                if (data == null) continue;
+                var so = new SerializedObject(data);
+                var features = so.FindProperty("m_RendererFeatures");
+                if (features == null) continue;
                 for (int i = 0; i < features.arraySize; i++)
                 {
                     var obj = features.GetArrayElementAtIndex(i).objectReferenceValue;
-                    if (obj != null && obj.GetType().Name.Contains("AmbientOcclusion"))
-                    {
-                        ((ScriptableRendererFeature)obj).SetActive(catalogSsao);
-                        return;
-                    }
+                    if (obj == null || obj is not ScriptableRendererFeature)
+                        return true;
                 }
             }
-
-            var type = System.Type.GetType("UnityEngine.Rendering.Universal.ScreenSpaceAmbientOcclusion, Unity.RenderPipelines.Universal.Runtime");
-            if (type == null) return;
-            var feature = (ScriptableRendererFeature)ScriptableObject.CreateInstance(type);
-            feature.name = "ScreenSpaceAmbientOcclusion";
-            feature.SetActive(catalogSsao);
-            AssetDatabase.AddObjectToAsset(feature, data);
-            InsertRendererFeature(data, feature);
+            return false;
         }
 
-        static void InsertRendererFeature(UniversalRendererData data, ScriptableRendererFeature feature)
+        static void ClearRendererFeatures(UniversalRendererData data)
         {
             var so = new SerializedObject(data);
             var features = so.FindProperty("m_RendererFeatures");
             var map = so.FindProperty("m_RendererFeatureMap");
             if (features == null) return;
-            features.arraySize++;
-            features.GetArrayElementAtIndex(features.arraySize - 1).objectReferenceValue = feature;
-            if (map != null)
+
+            for (int i = features.arraySize - 1; i >= 0; i--)
             {
-                map.arraySize = features.arraySize;
-                map.GetArrayElementAtIndex(map.arraySize - 1).longValue = feature.GetInstanceID();
+                var obj = features.GetArrayElementAtIndex(i).objectReferenceValue;
+                if (obj != null)
+                    Object.DestroyImmediate(obj, true);
             }
+
+            features.arraySize = 0;
+            if (map != null)
+                map.arraySize = 0;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -179,22 +146,29 @@ namespace RenderingLab.Editor
             asset.supportsHDR = !QualityTierUtil.IsLow(tier);
             asset.shadowDistance = QualityTierUtil.IsMobile(tier) ? 25f : 80f;
             asset.shadowCascadeCount = QualityTierUtil.IsHigh(tier) ? 4 : QualityTierUtil.IsLow(tier) ? 1 : 2;
-            asset.supportsMainLightShadows = tier != QualityTier.MobileLow;
             asset.mainLightShadowmapResolution = new[] { 4096, 2048, 1024, 2048, 1024, 512 }[(int)tier];
-            asset.additionalLightsRenderingMode = QualityTierUtil.IsLow(tier) || tier == QualityTier.MobileMid
-                ? LightRenderingMode.Disabled
-                : LightRenderingMode.PerPixel;
             asset.maxAdditionalLightsCount = QualityTierUtil.IsHigh(tier) ? 8 : 4;
-            asset.supportsAdditionalLightShadows = QualityTierUtil.IsHigh(tier);
-            asset.reflectionProbeBlending = QualityTierUtil.IsHigh(tier) || tier == QualityTier.PcMid;
-            asset.reflectionProbeBoxProjection = QualityTierUtil.IsHigh(tier) || tier == QualityTier.PcMid;
-            asset.supportsSoftShadows = !QualityTierUtil.IsLow(tier);
             asset.colorGradingMode = QualityTierUtil.IsMobile(tier) ? ColorGradingMode.LowDynamicRange : ColorGradingMode.HighDynamicRange;
             asset.colorGradingLutSize = QualityTierUtil.IsLow(tier) ? 16 : 32;
-            asset.supportsCameraOpaqueTexture = true;
-            asset.supportsCameraDepthTexture = true;
+            asset.supportsCameraOpaqueTexture = !QualityTierUtil.IsLow(tier);
+            asset.supportsCameraDepthTexture = !QualityTierUtil.IsLow(tier);
+
+            bool mainShadows = tier != QualityTier.MobileLow;
+            bool additionalShadows = QualityTierUtil.IsHigh(tier);
+            bool probeBlend = QualityTierUtil.IsHigh(tier) || tier == QualityTier.PcMid;
+            bool additionalPerPixel = !(QualityTierUtil.IsLow(tier) || tier == QualityTier.MobileMid);
 
             var so = new SerializedObject(asset);
+            SetBool(so, "m_MainLightShadowsSupported", mainShadows);
+            SetEnum(so, "m_AdditionalLightsRenderingMode", additionalPerPixel
+                ? LightRenderingMode.PerPixel
+                : LightRenderingMode.Disabled);
+            SetBool(so, "m_AdditionalLightShadowsSupported", additionalShadows);
+            SetBool(so, "m_AnyShadowsSupported", mainShadows || additionalShadows);
+            SetBool(so, "m_ReflectionProbeBlending", probeBlend);
+            SetBool(so, "m_ReflectionProbeBoxProjection", probeBlend);
+            SetBool(so, "m_SoftShadowsSupported", !QualityTierUtil.IsLow(tier));
+
             var list = so.FindProperty("m_RendererDataList");
             if (list != null)
             {
@@ -206,7 +180,7 @@ namespace RenderingLab.Editor
                 probe.intValue = QualityTierUtil.IsLow(tier) ? 0 : 1;
             var upscale = so.FindProperty("m_UpscalingFilter");
             if (upscale != null)
-                upscale.intValue = tier == QualityTier.PcHigh ? 4 : 0; // 4 often STP in Unity 6 enums; verify in Inspector
+                upscale.intValue = tier == QualityTier.PcHigh ? 4 : 0;
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(asset);
             return asset;
@@ -240,6 +214,20 @@ namespace RenderingLab.Editor
             for (int i = 0; i < paths.Length; i++)
                 list[i] = new EditorBuildSettingsScene(paths[i], true);
             EditorBuildSettings.scenes = list;
+        }
+
+        static void SetBool(SerializedObject so, string property, bool value)
+        {
+            var p = so.FindProperty(property);
+            if (p != null)
+                p.boolValue = value;
+        }
+
+        static void SetEnum(SerializedObject so, string property, System.Enum value)
+        {
+            var p = so.FindProperty(property);
+            if (p != null)
+                p.intValue = System.Convert.ToInt32(value);
         }
     }
 }

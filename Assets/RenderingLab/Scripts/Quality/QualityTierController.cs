@@ -5,8 +5,8 @@ using UnityEngine.Rendering.Universal;
 namespace RenderingLab
 {
     /// <summary>
-    /// Runtime quality switch: Quality Settings + URP Asset + shader/global keywords.
-    /// Assign a catalog created by Rendering Lab > Initialize Project.
+    /// Runtime quality switch: Quality Settings level + URP Asset.
+    /// Catalog is created by Rendering Lab > Initialize Project.
     /// </summary>
     [DefaultExecutionOrder(-1000)]
     public class QualityTierController : MonoBehaviour
@@ -56,12 +56,6 @@ namespace RenderingLab
                 }
             }
 
-            bool planar = catalog == null || catalog.planarReflection[(int)tier];
-            bool outline = catalog == null || catalog.outline[(int)tier];
-            Shader.SetGlobalFloat("_LabPlanarEnabled", planar ? 1f : 0f);
-            Shader.SetGlobalFloat("_LabOutlineEnabled", outline ? 1f : 0f);
-            Shader.SetGlobalFloat("_LabLowQuality", QualityTierUtil.IsLow(tier) ? 1f : 0f);
-
             TierChanged?.Invoke(tier);
         }
 
@@ -79,10 +73,8 @@ namespace RenderingLab
             return
                 $"{QualityTierUtil.DisplayName(tier)}\n" +
                 $"Path {catalog.renderingPath[i]}  Scale {catalog.renderScale[i]:0.00}\n" +
-                $"Shadow {catalog.shadowMapSize[i]}  Planar {(catalog.planarReflection[i] ? "ON" : "off")}  " +
-                $"SSAO {(catalog.ssao[i] ? "ON" : "off")}  Outline {(catalog.outline[i] ? "ON" : "off")}\n" +
-                $"Bloom {(catalog.bloom[i] ? "ON" : "off")}  STP {(catalog.stp[i] ? "ON" : "off")}  " +
-                $"AddLights {(catalog.additionalLights[i] ? "ON" : "off")}";
+                $"Shadow {catalog.shadowMapSize[i]}  HDR {(catalog.hdr[i] ? "ON" : "off")}  " +
+                $"AddLights {(catalog.additionalLights[i] ? "ON" : "off")}  STP {(catalog.stp[i] ? "ON" : "off")}";
         }
     }
 }
