@@ -1,0 +1,82 @@
+Shader "RenderingLab/Genshin/SkyboxBlend"
+{
+    Properties
+    {
+        _Tint("Tint Color", Color) = (0.5, 0.5, 0.5, 0.5)
+        [Gamma] _Exposure("Exposure", Range(0, 8)) = 1.0
+        _Rotation("Rotation", Range(0, 360)) = 0
+        [NoScaleOffset] _Tex("Cubemap A (HDR)", Cube) = "grey" {}
+        [NoScaleOffset] _TexB("Cubemap B (HDR)", Cube) = "grey" {}
+        _SkyBlend("Sky Blend", Range(0, 1)) = 0
+    }
+
+    SubShader
+    {
+        Tags { "Queue" = "Background" "RenderType" = "Background" "PreviewType" = "Skybox" }
+        Cull Off
+        ZWrite Off
+
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma target 2.0
+            #include "UnityCG.cginc"
+
+            samplerCUBE _Tex;
+            samplerCUBE _TexB;
+            half4 _Tex_HDR;
+            half4 _TexB_HDR;
+            half4 _Tint;
+            half _Exposure;
+            float _Rotation;
+            float _SkyBlend;
+
+            float3 RotateAroundYInDegrees(float3 vertex, float degrees)
+            {
+                float alpha = degrees * UNITY_PI / 180.0;
+                float sina, cosa;
+                sincos(alpha, sina, cosa);
+                float2x2 m = float2x2(cosa, -sina, sina, cosa);
+                float2 xz = mul(m, vertex.xz);
+                return float3(xz.x, vertex.y, xz.y);
+            }
+
+            struct appdata_t
+            {
+                float4 vertex : POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct v2f
+            {
+                float4 vertex : SV_POSITION;
+                float3 texcoord : TEXCOORD0;
+                UNITY_VERTEX_OUTPUT_STEREO
+            };
+
+            v2f vert(appdata_t v)
+            {
+                v2f o;
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+                float3 rotated = RotateAroundYInDegrees(v.vertex, _Rotation);
+                o.vertex = UnityObjectToClipPos(rotated);
+                o.texcoord = v.vertex.xyz;
+                return o;
+            }
+
+            fixed4 frag(v2f i) : SV_Target
+            {
+                half3 a = DecodeHDR(texCUBE(_Tex, i.texcoord), _Tex_HDR);
+                half3 b = DecodeHDR(texCUBE(_TexB, i.texcoord), _TexB_HDR);
+                half3 c = lerp(a, b, saturate(_SkyBlend));
+                c *= _Tint.rgb * unity_ColorSpaceDouble.rgb * _Exposure;
+                return half4(c, 1);
+            }
+            ENDCG
+        }
+    }
+    Fallback Off
+}

@@ -86,6 +86,7 @@ namespace RenderingLab.Editor
             data.accurateGbufferNormals = false;
             data.shadowTransparentReceive = !QualityTierUtil.IsLow(tier);
             ClearRendererFeatures(data);
+            AssignDefaultPostProcessData(data);
             EditorUtility.SetDirty(data);
             return data;
         }
@@ -110,6 +111,22 @@ namespace RenderingLab.Editor
                 }
             }
             return false;
+        }
+
+        static void AssignDefaultPostProcessData(UniversalRendererData data)
+        {
+            var so = new SerializedObject(data);
+            var pp = so.FindProperty("postProcessData");
+            if (pp == null || pp.objectReferenceValue != null)
+                return;
+
+            var ppData = AssetDatabase.LoadAssetAtPath<PostProcessData>(
+                "Packages/com.unity.render-pipelines.universal/Runtime/Data/PostProcessData.asset");
+            if (ppData == null)
+                return;
+
+            pp.objectReferenceValue = ppData;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         static void ClearRendererFeatures(UniversalRendererData data)

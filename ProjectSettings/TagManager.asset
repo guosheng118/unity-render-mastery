@@ -38,8 +38,8 @@ TagManager:
   - 
   - 
   - 
-  - 
-  - 
+  - FX
+  - SkyStar
   m_SortingLayers:
   - name: Default
     uniqueID: 0
