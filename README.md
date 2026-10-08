@@ -30,18 +30,5 @@ Unity 6.3 URP 渲染实验室。当前只做一件事：**PC / Mobile 六档质�
 | Mobile Mid | Forward | 1024 | 开 | 关 | 关 |
 | Mobile Low | Forward | 关 | 关 | 关 | 关 |
 
-运行时切档走 `QualityTierController`：换 Quality Level + URP Asset。
 
-## 以后再写（你开口即可）
 
-- 灯光 Rig（Key / Fill / Rim / 霓虹）
-- GI / APV
-- 反射（Probe / Planar）
-- Renderer Feature（描边、Debug、教学 SSR）
-- 后处理 Volume
-- 角色 Shader（StylizedLit）
-- 场景 Shader（湿地面等）
-
-## 文档
-
-[`Assets/RenderingLab/Docs`](Assets/RenderingLab/Docs/README.md)
